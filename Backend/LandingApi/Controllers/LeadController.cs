@@ -1,17 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Threading.Tasks;
-using System.Web;
 using LandingApi.DataAccess.Repositories.Interfaces;
 using LandingApi.Extensions;
 using LandingApi.Models;
 using LandingApi.Models.Enums;
 using LandingApi.ViewModels;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.Extensions.Logging;
 
 namespace LandingApi.Controllers
@@ -27,10 +22,11 @@ namespace LandingApi.Controllers
         {
             _logger = logger;
             _clientRepository = clientRepository;
+
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public IActionResult Get()
         {
             var returnedData = _clientRepository.Get();
 
@@ -44,7 +40,12 @@ namespace LandingApi.Controllers
             {
                 string dateFormat = "yyyy-MM-dd";
                 DateTime dateValue;
-                DateTime.TryParseExact(client.Birthday.Encoded(), dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.AllowLeadingWhite, out dateValue);
+
+                if (!DateTime.TryParseExact(client.Birthday.Encoded(), dateFormat, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AllowLeadingWhite, out dateValue))
+                {
+                    throw new Exception($"Date in wrong format. Try '{dateFormat}'.");
+                }
 
                 var clientData = new Client
                 {
@@ -57,12 +58,12 @@ namespace LandingApi.Controllers
                 };
 
                 var clientResult = await _clientRepository.AddAsync(clientData);
-
+                
                 return Ok(clientResult);
             }
             catch (Exception e)
             {
-                return NotFound(e);
+                return NotFound(new { msg = e.Message });
             }
         }
     }
